@@ -174,11 +174,8 @@ namespace SGames25Api.Controllers
             }
         }
 
-
-
         // POST: api/Athletes
         // To protect from overposting attacks, see https://go.microsoft.com/fwlink/?linkid=2123754
-
 
         [HttpPost]
         public async Task<ActionResult<AthleteDTO>> PostAthlete(AthleteDTO athleteDTO)
@@ -240,8 +237,6 @@ namespace SGames25Api.Controllers
             }
         }
 
-
-
         // DELETE: api/Athletes/5
 
         [HttpDelete("{id}")]
@@ -268,6 +263,178 @@ namespace SGames25Api.Controllers
                 return BadRequest(new { message = "Database error: Unable to delete athlete. Ensure there are no dependencies preventing deletion." });
             }
         }
+
+        [HttpGet("BySport/{id}")]
+        public async Task<ActionResult<IEnumerable<AthleteDTO>>> GetAthletesBySport(int id)
+        {
+            try
+            {
+                var athletes = await _context.Athletes
+                    .Where(a => a.SportID == id)
+                    .Include(c => c.Contingent)
+                    .Include(s => s.Sport)
+                    .Select(a => new AthleteDTO
+                    {
+                        ID = a.ID,
+                        FirstName = a.FirstName,
+                        MiddleName = a.MiddleName,
+                        LastName = a.LastName,
+                        AthleteCode = a.AthleteCode,
+                        DOB = a.DOB,
+                        Height = a.Height,
+                        Weight = a.Weight,
+                        Gender = a.Gender,
+                        Affiliation = a.Affiliation,
+                        ContingentID = a.ContingentID,
+                        Contingent = a.Contingent != null ? new ContingentDTO
+                        {
+                            ID = a.Contingent.ID,
+                            Code = a.Contingent.Code,
+                            Name = a.Contingent.Name
+                        } : null,
+                        SportID = a.SportID,
+                        Sport = a.Sport != null ? new SportDTO
+                        {
+                            ID = a.Sport.ID,
+                            Code = a.Sport.Code,
+                            Name = a.Sport.Name
+                        } : null,
+                        RowVersion = a.RowVersion
+                    })
+                    .ToListAsync();
+
+                if (!athletes.Any())
+                {
+                    return NotFound(new { message = "No athletes found for the specified sport." });
+                }
+
+                return athletes;
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(new { message = "An error occurred while retrieving athletes by sport.", details = ex.Message });
+            }
+        }
+
+
+        [HttpGet("ByContingent/{id}")]
+        public async Task<ActionResult<IEnumerable<AthleteDTO>>> GetAthletesByContingent(int id)
+        {
+            try
+            {
+                var athletes = await _context.Athletes
+                    .Where(a => a.ContingentID == id)
+                    .Include(c => c.Contingent)
+                    .Include(s => s.Sport)
+                    .Select(a => new AthleteDTO
+                    {
+                        ID = a.ID,
+                        FirstName = a.FirstName,
+                        MiddleName = a.MiddleName,
+                        LastName = a.LastName,
+                        AthleteCode = a.AthleteCode,
+                        DOB = a.DOB,
+                        Height = a.Height,
+                        Weight = a.Weight,
+                        Gender = a.Gender,
+                        Affiliation = a.Affiliation,
+                        ContingentID = a.ContingentID,
+                        Contingent = a.Contingent != null ? new ContingentDTO
+                        {
+                            ID = a.Contingent.ID,
+                            Code = a.Contingent.Code,
+                            Name = a.Contingent.Name
+                        } : null,
+                        SportID = a.SportID,
+                        Sport = a.Sport != null ? new SportDTO
+                        {
+                            ID = a.Sport.ID,
+                            Code = a.Sport.Code,
+                            Name = a.Sport.Name
+                        } : null,
+                        RowVersion = a.RowVersion
+                    })
+                    .ToListAsync();
+
+                if (!athletes.Any())
+                {
+                    return NotFound(new { message = "No athletes found for the specified contingent." });
+                }
+
+                return athletes;
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(new { message = "An error occurred while retrieving athletes by contingent.", details = ex.Message });
+            }
+        }
+
+
+        [HttpGet("ByFilter")]
+        public async Task<ActionResult<IEnumerable<AthleteDTO>>> GetAthletesByFilter(int? ContingentID, int? SportID)
+        {
+            try
+            {
+                var query = _context.Athletes
+                    .Include(c => c.Contingent)
+                    .Include(s => s.Sport)
+                    .AsQueryable();
+
+                if (ContingentID.HasValue)
+                {
+                    query = query.Where(a => a.ContingentID == ContingentID.Value);
+                }
+
+                if (SportID.HasValue)
+                {
+                    query = query.Where(a => a.SportID == SportID.Value);
+                }
+
+                var athletes = await query
+                    .Select(a => new AthleteDTO
+                    {
+                        ID = a.ID,
+                        FirstName = a.FirstName,
+                        MiddleName = a.MiddleName,
+                        LastName = a.LastName,
+                        AthleteCode = a.AthleteCode,
+                        DOB = a.DOB,
+                        Height = a.Height,
+                        Weight = a.Weight,
+                        Gender = a.Gender,
+                        Affiliation = a.Affiliation,
+                        ContingentID = a.ContingentID,
+                        Contingent = a.Contingent != null ? new ContingentDTO
+                        {
+                            ID = a.Contingent.ID,
+                            Code = a.Contingent.Code,
+                            Name = a.Contingent.Name
+                        } : null,
+                        SportID = a.SportID,
+                        Sport = a.Sport != null ? new SportDTO
+                        {
+                            ID = a.Sport.ID,
+                            Code = a.Sport.Code,
+                            Name = a.Sport.Name
+                        } : null,
+                        RowVersion = a.RowVersion
+                    })
+                    .ToListAsync();
+
+                if (!athletes.Any())
+                {
+                    return NotFound(new { message = "No athletes found matching the provided criteria." });
+                }
+
+                return athletes;
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(new { message = "An error occurred while retrieving athletes based on the filter.", details = ex.Message });
+            }
+        }
+
+
 
 
         private bool AthleteExists(int id)
