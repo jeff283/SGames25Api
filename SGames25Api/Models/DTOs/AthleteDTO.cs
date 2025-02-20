@@ -6,7 +6,7 @@ using Microsoft.AspNetCore.Mvc;
 namespace SGames25Api.Models.DTOs;
 
 [ModelMetadataType(typeof(MetaDatas.AthleteMetaData))]
-public class AthleteDTO : Auditable, IValidatableObject
+public class AthleteDTO : IValidatableObject
 {
         public int ID { get; set; }
         public string FirstName { get; set; } = "";
@@ -21,10 +21,12 @@ public class AthleteDTO : Auditable, IValidatableObject
 
         // Navigation properties for relationships
         public int ContingentID { get; set; }
-        public Contingent? Contingent { get; set; }
+        public ContingentDTO? Contingent { get; set; }
 
         public int SportID { get; set; }
-        public Sport? Sport { get; set; }
+        public SportDTO? Sport { get; set; }
+
+         public byte[]? RowVersion { get; set; }
 
         public IEnumerable<ValidationResult> Validate(ValidationContext validationContext)
         {

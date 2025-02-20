@@ -12,6 +12,6 @@ public class ContingentDTO
     public string Name { get; set; } = "";
 
     // Navigation property
-    public ICollection<Athlete>? Athletes { get; set; }
+    public ICollection<AthleteDTO>? Athletes { get; set; }
 
 }
