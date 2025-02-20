@@ -71,20 +71,54 @@ namespace SGames25Api.Controllers
 
         }
 
-       
+
 
         // GET: api/Athletes/5
         [HttpGet("{id}")]
-        public async Task<ActionResult<Athlete>> GetAthlete(int id)
+        public async Task<ActionResult<AthleteDTO>> GetAthlete(int id)
         {
-            var athlete = await _context.Athletes.FindAsync(id);
 
-            if (athlete == null)
+
+            var athleteDTO = await _context.Athletes
+             .Include(c => c.Contingent)
+             .Include(s => s.Sport)
+             .Select(a => new AthleteDTO
+             {
+                 ID = a.ID,
+                 FirstName = a.FirstName,
+                 MiddleName = a.MiddleName,
+                 LastName = a.LastName,
+                 AthleteCode = a.AthleteCode,
+                 DOB = a.DOB,
+                 Height = a.Height,
+                 Weight = a.Weight,
+                 Gender = a.Gender,
+                 Affiliation = a.Affiliation,
+                 ContingentID = a.ContingentID,
+                 Contingent = a.Contingent != null ? new ContingentDTO
+                 {
+                     ID = a.Contingent.ID,
+                     Code = a.Contingent.Code,
+                     Name = a.Contingent.Name
+                 } : null,
+                 SportID = a.SportID,
+                 Sport = a.Sport != null ? new SportDTO
+                 {
+                     ID = a.Sport.ID,
+                     Code = a.Sport.Code,
+                     Name = a.Sport.Name
+                 } : null,
+                 RowVersion = a.RowVersion
+             }).FirstOrDefaultAsync(a => a.ID == id);
+
+            if (athleteDTO != null)
             {
-                return NotFound();
+                return athleteDTO;
             }
-
-            return athlete;
+            else
+            {
+                return NotFound(new { message = "Error: No Athelete records found in the database." });
+            }
         }
 
         // PUT: api/Athletes/5
