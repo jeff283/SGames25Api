@@ -1,0 +1,6 @@
+@SGames25Api_HostAddress = http://localhost:5204
+
+GET {{SGames25Api_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###
