@@ -1,9 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
-using Microsoft.AspNetCore.Http;
-using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using SGames25Api.Data;
 using SGames25Api.Models;
@@ -124,60 +119,156 @@ namespace SGames25Api.Controllers
         // PUT: api/Athletes/5
         // To protect from overposting attacks, see https://go.microsoft.com/fwlink/?linkid=2123754
         [HttpPut("{id}")]
-        public async Task<IActionResult> PutAthlete(int id, Athlete athlete)
+        public async Task<IActionResult> PutAthlete(int id, AthleteDTO athleteDTO)
         {
-            if (id != athlete.ID)
+            if (id != athleteDTO.ID)
             {
-                return BadRequest();
+                return BadRequest(new { message = "ID mismatch." });
             }
 
-            _context.Entry(athlete).State = EntityState.Modified;
+            var athlete = await _context.Athletes.FindAsync(id);
+            if (athlete == null)
+            {
+                return NotFound(new { message = "Athlete not found." });
+            }
+
+            // Update properties
+            athlete.FirstName = athleteDTO.FirstName;
+            athlete.MiddleName = athleteDTO.MiddleName;
+            athlete.LastName = athleteDTO.LastName;
+            athlete.AthleteCode = athleteDTO.AthleteCode;
+            athlete.DOB = athleteDTO.DOB;
+            athlete.Height = athleteDTO.Height;
+            athlete.Weight = athleteDTO.Weight;
+            athlete.Gender = athleteDTO.Gender;
+            athlete.Affiliation = athleteDTO.Affiliation;
+            athlete.ContingentID = athleteDTO.ContingentID;
+            athlete.SportID = athleteDTO.SportID;
 
             try
             {
                 await _context.SaveChangesAsync();
+                return NoContent();
             }
             catch (DbUpdateConcurrencyException)
             {
-                if (!AthleteExists(id))
+                if (!_context.Athletes.Any(e => e.ID == id))
                 {
-                    return NotFound();
+                    return Conflict(new { message = "Concurrency Error: Athlete has been removed." });
                 }
                 else
                 {
-                    throw;
+                    return Conflict(new { message = "Concurrency Error: Athlete has been updated by another user. Please reload the data and try again." });
                 }
             }
-
-            return NoContent();
+            catch (DbUpdateException dex)
+            {
+                if (dex.GetBaseException().Message.Contains("UNIQUE"))
+                {
+                    return BadRequest(new { message = "Unable to save: Duplicate Athlete data (Athlete Code or another unique constraint)." });
+                }
+                else
+                {
+                    return BadRequest(new { message = "Unable to save changes to the database. Try again, and if the problem persists, contact support." });
+                }
+            }
         }
+
+
 
         // POST: api/Athletes
         // To protect from overposting attacks, see https://go.microsoft.com/fwlink/?linkid=2123754
-        [HttpPost]
-        public async Task<ActionResult<Athlete>> PostAthlete(Athlete athlete)
-        {
-            _context.Athletes.Add(athlete);
-            await _context.SaveChangesAsync();
 
-            return CreatedAtAction("GetAthlete", new { id = athlete.ID }, athlete);
+
+        [HttpPost]
+        public async Task<ActionResult<AthleteDTO>> PostAthlete(AthleteDTO athleteDTO)
+        {
+            if (athleteDTO == null)
+            {
+                return BadRequest(new { message = "Invalid athlete data." });
+            }
+
+            var athlete = new Athlete
+            {
+                FirstName = athleteDTO.FirstName,
+                MiddleName = athleteDTO.MiddleName,
+                LastName = athleteDTO.LastName,
+                AthleteCode = athleteDTO.AthleteCode,
+                DOB = athleteDTO.DOB,
+                Height = athleteDTO.Height,
+                Weight = athleteDTO.Weight,
+                Gender = athleteDTO.Gender,
+                Affiliation = athleteDTO.Affiliation,
+                ContingentID = athleteDTO.ContingentID,
+                SportID = athleteDTO.SportID
+            };
+
+            try
+            {
+                _context.Athletes.Add(athlete);
+                await _context.SaveChangesAsync();
+
+                var createdDTO = new AthleteDTO
+                {
+                    ID = athlete.ID,
+                    FirstName = athlete.FirstName,
+                    MiddleName = athlete.MiddleName,
+                    LastName = athlete.LastName,
+                    AthleteCode = athlete.AthleteCode,
+                    DOB = athlete.DOB,
+                    Height = athlete.Height,
+                    Weight = athlete.Weight,
+                    Gender = athlete.Gender,
+                    Affiliation = athlete.Affiliation,
+                    ContingentID = athlete.ContingentID,
+                    SportID = athlete.SportID,
+                    RowVersion = athlete.RowVersion
+                };
+
+                return CreatedAtAction(nameof(GetAthletes), new { id = athlete.ID }, createdDTO);
+            }
+            catch (DbUpdateException dex)
+            {
+                if (dex.GetBaseException().Message.Contains("UNIQUE"))
+                {
+                    return BadRequest(new { message = "Unable to save: Duplicate Athlete Code detected." });
+                }
+                else
+                {
+                    return BadRequest(new { message = "Database error: Unable to save changes. Please try again later or contact support." });
+                }
+            }
         }
 
+
+
         // DELETE: api/Athletes/5
+
         [HttpDelete("{id}")]
         public async Task<IActionResult> DeleteAthlete(int id)
         {
             var athlete = await _context.Athletes.FindAsync(id);
             if (athlete == null)
             {
-                return NotFound();
+                return NotFound(new { message = "Athlete not found." });
             }
 
-            _context.Athletes.Remove(athlete);
-            await _context.SaveChangesAsync();
-
-            return NoContent();
+            try
+            {
+                _context.Athletes.Remove(athlete);
+                await _context.SaveChangesAsync();
+                return NoContent();
+            }
+            catch (DbUpdateConcurrencyException)
+            {
+                return Conflict(new { message = "Concurrency Error: Athlete has already been removed by another user." });
+            }
+            catch (DbUpdateException)
+            {
+                return BadRequest(new { message = "Database error: Unable to delete athlete. Ensure there are no dependencies preventing deletion." });
+            }
         }
+
 
         private bool AthleteExists(int id)
         {
