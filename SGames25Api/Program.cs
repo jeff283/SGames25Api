@@ -47,8 +47,8 @@ using (var scope = app.Services.CreateScope())
 {
     var services = scope.ServiceProvider;
 
-    SummerGamesInitializer.Initialize(serviceProvider: services, DeleteDatabase: true,
-        UseMigrations: false, SeedRandomSampleData: false);
+    SummerGamesInitializer.Initialize(serviceProvider: services, DeleteDatabase: false,
+        UseMigrations: true, SeedRandomSampleData: true);
 }
 
 app.Run();
